@@ -1,6 +1,8 @@
 # Full example for my blog post at:
 # https://danijar.com/building-variational-auto-encoders-in-tensorflow/
 
+############################ Yvannia ################################
+
 import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow as tf
@@ -23,6 +25,9 @@ def make_prior(code_size):
   scale = tf.ones(code_size)
   return tfd.MultivariateNormalDiag(loc, scale)
 
+######################################################################
+
+############################ Botoul ##################################
 
 def make_decoder(code, data_shape):
   x = code
@@ -32,6 +37,7 @@ def make_decoder(code, data_shape):
   logit = tf.reshape(logit, [-1] + data_shape)
   return tfd.Independent(tfd.Bernoulli(logit), 2)
 
+#######################################################################
 
 def plot_codes(ax, codes, labels):
   ax.scatter(codes[:, 0], codes[:, 1], s=2, c=labels, alpha=0.1)
@@ -48,6 +54,8 @@ def plot_samples(ax, samples):
     ax[index].imshow(sample, cmap='gray')
     ax[index].axis('off')
 
+
+############################ Logan ##################################
 
 data = tf.placeholder(tf.float32, [None, 28, 28])
 
@@ -67,6 +75,9 @@ optimize = tf.train.AdamOptimizer(0.001).minimize(-elbo)
 
 samples = make_decoder(prior.sample(10), [28, 28]).mean()
 
+######################################################################
+
+############################ Sean ####################################
 mnist = input_data.read_data_sets('MNIST_data/')
 fig, ax = plt.subplots(nrows=20, ncols=11, figsize=(10, 20))
 with tf.train.MonitoredSession() as sess:
@@ -81,3 +92,5 @@ with tf.train.MonitoredSession() as sess:
       feed = {data: mnist.train.next_batch(100)[0].reshape([-1, 28, 28])}
       sess.run(optimize, feed)
 plt.savefig('vae-mnist.png', dpi=300, transparent=True, bbox_inches='tight')
+
+#######################################################################
