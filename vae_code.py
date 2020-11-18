@@ -57,22 +57,43 @@ def plot_samples(ax, samples):
 
 ############################ Logan ##################################
 
+#Create placeholder data in dimension ?x28x28, has no represented data values
+#'None' represents an unknown dimension
 data = tf.placeholder(tf.float32, [None, 28, 28])
 
+#Create function templates, this ensures that function specific variables are initialized first and consistent between all calls of this function
 make_encoder = tf.make_template('encoder', make_encoder)
 make_decoder = tf.make_template('decoder', make_decoder)
 
-# Define the model.
+
+# Define the model------------------------------------------------------
+
+#Returns a Multivariate Normal Diag Distribution with basic parameters set [0,0] and [1,1], prior is fixed with no trainable parameters so it does not need a template.
+#See code explanation for 'make_prior'
+#Prior is p(z)
 prior = make_prior(code_size=2)
+#Create a Multivariate Normal Diag Distribution based on our desired encoder
+#See code explanation for 'make_encoder'
+#Posterior is p(z|x)
 posterior = make_encoder(data, code_size=2)
+#Grab a sample of the data from our encoder that will be passed back through  our decoder, this is 'z'
 code = posterior.sample()
 
-# Define the loss.
-likelihood = make_decoder(code, [28, 28]).log_prob(data)
-divergence = tfd.kl_divergence(posterior, prior)
-elbo = tf.reduce_mean(likelihood - divergence)
-optimize = tf.train.AdamOptimizer(0.001).minimize(-elbo)
 
+# Define the loss-------------------------------------------------------
+#We need to compute the negative log-likelihood, so we use our decoder to find log(p(x|z))
+#Data is used as a template
+likelihood = make_decoder(code, [28, 28]).log_prob(data)
+#Find the KL divergence of the posterior and prior KL[p(z|x)||p(z)]
+divergence = tfd.kl_divergence(posterior, prior)
+#elbo is our loss function since it should be [-log(p(x|z)) + KL(p(z|x)||p(z))]
+#Here we find the value but negative
+elbo = tf.reduce_mean(likelihood - divergence)
+#Setup the tensorflow optimizer that will minimize loss, we must do it according to our created loss function
+#We must make elbo negative in order to correct signs since our output above is negative
+#Note, learning_rate is default '0.001' so this input is pointless
+optimize = tf.train.AdamOptimizer(0.001).minimize(-elbo)
+#Use the same decoder as before (Since we're using templates) to grab samples of the data. This is purely used for visual output in the code below.
 samples = make_decoder(prior.sample(10), [28, 28]).mean()
 
 ######################################################################
