@@ -170,6 +170,11 @@ def get_next(input, pos):
   return [input[i] for i in range(pos,pos+100)]
 
 
+mnist = input_data.read_data_sets('MNIST_data/')
+
+
+#Temporary labels, later on should be based on actual image labels and dataset size
+labels = [3]*1016
 
 #-------------------------Creating Tensorflow Session--------------------------
 #Create an array with single a-axis
@@ -188,7 +193,7 @@ with tf.train.MonitoredSession() as sess:
     #Plots epoch as y-axis
     ax[epoch, 0].set_ylabel('Epoch {}'.format(epoch))
     #Plots code on current epoch
-    plot_codes(ax[epoch, 0], test_codes, mnist.test.labels)
+    plot_codes(ax[epoch, 0], test_codes, labels)
     #Plots Images on current epoch
     plot_samples(ax[epoch, 1:], test_samples)
 #---------------------------------Optimizer--------------------------------------
