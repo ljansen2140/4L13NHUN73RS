@@ -180,22 +180,35 @@ labels = [3]*1016
 #Create an array with single a-axis
 fig, ax = plt.subplots(nrows=20, ncols=11, figsize=(10, 20))
 #Set Tensorflow monitored session
+
+max_epochs = 1000
+log_file = open("run_log.log", 'w')
+
 with tf.train.MonitoredSession() as sess:
 #------------------------------Running Session---------------------------------
   #Set max num of epoch
-  for epoch in range(20):
+  for epoch in range(max_epochs):
     #Reshaping images to parameters (**NumberOfImages, ImageWidth, ImageHeight**, ColorDimension)
     feed = {data: all_pics}
     #Runs with Error Cost, Code, and Images
     test_elbo, test_codes, test_samples = sess.run([elbo, code, samples], feed)
     #Prints out epochs and error cost
-    print('Epoch', epoch, 'elbo', test_elbo)
-    #Plots epoch as y-axis
-    ax[epoch, 0].set_ylabel('Epoch {}'.format(epoch))
-    #Plots code on current epoch
-    plot_codes(ax[epoch, 0], test_codes, labels)
-    #Plots Images on current epoch
-    plot_samples(ax[epoch, 1:], test_samples)
+
+
+
+    #print('Epoch', epoch, 'elbo', test_elbo)
+    #Log epoch and elbo to file
+    log_file.write("Epoch: " + str(epoch) + " Eblo: " + str(test_elbo))
+
+
+    
+    #Plot only the last 20 images
+    if epoch > max_epochs - 20:
+      ax[epoch, 0].set_ylabel('Epoch {}'.format(epoch))
+      #Plots code on current epoch
+      plot_codes(ax[epoch, 0], test_codes, labels)
+      #Plots Images on current epoch
+      plot_samples(ax[epoch, 1:], test_samples)
 #---------------------------------Optimizer--------------------------------------
     for i in range(600):
       feed = {data: get_next(all_pics, i)}
