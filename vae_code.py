@@ -99,19 +99,35 @@ samples = make_decoder(prior.sample(10), [28, 28]).mean()
 ######################################################################
 
 ############################ Sean ####################################
+#Simplifies the input data into mnist
 mnist = input_data.read_data_sets('MNIST_data/')
+#-------------------------Creating Tensorflow Session--------------------------
+#Create an array with single a-axis
 fig, ax = plt.subplots(nrows=20, ncols=11, figsize=(10, 20))
+#Set Tensorflow monitored session
 with tf.train.MonitoredSession() as sess:
+#------------------------------Running Session---------------------------------
+  #Set max num of epoch
   for epoch in range(20):
+    #Reshaping images to parameters (**NumberOfImages, ImageWidth, ImageHeight**, ColorDimension)
     feed = {data: mnist.test.images.reshape([-1, 28, 28])}
+    #Runs with Error Cost, Code, and Images
     test_elbo, test_codes, test_samples = sess.run([elbo, code, samples], feed)
+    #Prints out epochs and error cost
     print('Epoch', epoch, 'elbo', test_elbo)
+    #Plots epoch as y-axis
     ax[epoch, 0].set_ylabel('Epoch {}'.format(epoch))
+    #Plots code on current epoch
     plot_codes(ax[epoch, 0], test_codes, mnist.test.labels)
+    #Plots Images on current epoch
     plot_samples(ax[epoch, 1:], test_samples)
+#---------------------------------Optimizer--------------------------------------
     for _ in range(600):
       feed = {data: mnist.train.next_batch(100)[0].reshape([-1, 28, 28])}
+      #Optimize based on Error Cost
       sess.run(optimize, feed)
+#----------------------------------Output-----------------------------------------
+#Saves images to output file
 plt.savefig('vae-mnist.png', dpi=300, transparent=True, bbox_inches='tight')
 
 #######################################################################
