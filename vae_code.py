@@ -184,6 +184,8 @@ fig, ax = plt.subplots(nrows=20, ncols=11, figsize=(10, 20))
 max_epochs = 1000
 log_file = open("run_log.log", 'w')
 
+plot_iter = 0
+
 with tf.train.MonitoredSession() as sess:
 #------------------------------Running Session---------------------------------
   #Set max num of epoch
@@ -198,17 +200,18 @@ with tf.train.MonitoredSession() as sess:
 
     #print('Epoch', epoch, 'elbo', test_elbo)
     #Log epoch and elbo to file
-    log_file.write("Epoch: " + str(epoch) + " Eblo: " + str(test_elbo))
+    log_file.write("Epoch: " + str(epoch) + " Eblo: " + str(test_elbo) + "\n")
 
 
     
     #Plot only the last 20 images
-    if epoch > max_epochs - 20:
-      ax[epoch, 0].set_ylabel('Epoch {}'.format(epoch))
+    if epoch > max_epochs - 20 and not plot_iter > 19:
+      ax[plot_iter, 0].set_ylabel('Epoch {}'.format(epoch))
       #Plots code on current epoch
-      plot_codes(ax[epoch, 0], test_codes, labels)
+      plot_codes(ax[plot_iter, 0], test_codes, labels)
       #Plots Images on current epoch
-      plot_samples(ax[epoch, 1:], test_samples)
+      plot_samples(ax[plot_iter, 1:], test_samples)
+      plot_iter += 1
 #---------------------------------Optimizer--------------------------------------
     for i in range(600):
       feed = {data: get_next(all_pics, i)}
