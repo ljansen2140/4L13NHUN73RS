@@ -29,12 +29,27 @@ def make_prior(code_size):
 
 ############################ Botoul ##################################
 
+#Declaring a function called decoder which takes two parameters: code and data_shape
 def make_decoder(code, data_shape):
+ # initializing variable x which stores code.
   x = code
+  #An activation function: tf.nn.relu
+  # It is applied to the output of a neural network layer,
+  # #which is then passed as the input to the next layer.
+  # Activation functions are an essential part of neural networks
+  # as they provide non-linearity, without which the neural network
+  # reduces to a mere logistic regression model
+  # applying `tf.nn.relu` function and add a Dense layer as the first layer.
   x = tf.layers.dense(x, 200, tf.nn.relu)
   x = tf.layers.dense(x, 200, tf.nn.relu)
+  #Logits are by definition unnormalized log probabilities
   logit = tf.layers.dense(x, np.prod(data_shape))
+  #-1 Place holder for the dimension that will be calculated automatically.
+  # this way, we can calculate length accurately
   logit = tf.reshape(logit, [-1] + data_shape)
+  #we are returning a tfp independent Bernoulli distribution
+  #width and height in our case, belong to the same data point (2)
+  # even though they have independent parameters
   return tfd.Independent(tfd.Bernoulli(logit), 2)
 
 #######################################################################
