@@ -17,9 +17,7 @@ tfd = tf.contrib.distributions
 #CIFAR10 Branch
 #This code is indev code for making this VAE work with the CIFAR10 dataset, it may not run properly
 #
-#Errors: Code currently breaks when running, issue seems to be on line 154 when attempting to create the elbo
-#Relevant Error:
-#tensorflow.python.framework.errors_impl.InvalidArgumentError: Incompatible shapes: [1016,32] vs. [1016]
+#Errors: Issues with plotting, see lines 191, 193, 201
 
 
 #Function for returning dictionary data from Pickle
@@ -101,7 +99,7 @@ def make_decoder(code, data_shape):
   #we are returning a tfp independent Bernoulli distribution
   #width and height in our case, belong to the same data point (2)
   # even though they have independent parameters
-  return tfd.Independent(tfd.Bernoulli(logit), 2)
+  return tfd.Independent(tfd.Bernoulli(logit), 3)
 
 
 def plot_codes(ax, codes, labels):
@@ -173,11 +171,6 @@ def get_next(input, pos):
 
 
 
-
-
-############################ Sean ####################################
-#Simplifies the input data into mnist
-mnist = input_data.read_data_sets('MNIST_data/')
 #-------------------------Creating Tensorflow Session--------------------------
 #Create an array with single a-axis
 fig, ax = plt.subplots(nrows=20, ncols=11, figsize=(10, 20))
@@ -199,7 +192,7 @@ with tf.train.MonitoredSession() as sess:
     #Plots Images on current epoch
     plot_samples(ax[epoch, 1:], test_samples)
 #---------------------------------Optimizer--------------------------------------
-    for _ in range(600):
+    for i in range(600):
       feed = {data: get_next(all_pics, i)}
       #Optimize based on Error Cost
       sess.run(optimize, feed)
