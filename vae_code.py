@@ -1,7 +1,6 @@
 # Full example for my blog post at:
 # https://danijar.com/building-variational-auto-encoders-in-tensorflow/
 
-############################ Yvannia ################################
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -9,6 +8,62 @@ import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
 
 tfd = tf.contrib.distributions
+
+
+
+#---------------------------------------------------------
+#---------------------TEST CODE---------------------------
+#---------------------------------------------------------
+#CIFAR10 Branch
+#This code is indev code for making this VAE work with the CIFAR10 dataset, it may not run properly
+#
+#Errors: Code currently breaks when running, issue seems to be on line 154 when attempting to create the elbo
+#Relevant Error:
+#tensorflow.python.framework.errors_impl.InvalidArgumentError: Incompatible shapes: [1016,32] vs. [1016]
+
+
+#Function for returning dictionary data from Pickle
+#Format info here: http://www.cs.toronto.edu/~kriz/cifar.html
+import pickle
+def unpickle(file):
+    with open(file, 'rb') as fo:
+        d = pickle.load(fo, encoding='bytes')
+    return d
+
+#Get from data batch 1
+data_set_1 = unpickle('data_batch_1')
+#Grab only the image data
+all_data = data_set_1[b'data']
+#Get labels
+all_labels = data_set_1[b'labels']
+#Reshape data into usable format
+#Format, each pic = 3072 entries
+#1024 - R values
+#1024 - G values
+#1024 - B values
+# Total 3x32x32 = 3072
+all_pics = all_data.reshape(-1,3,32,32)
+#Normalize values (betwee 0 and 1) for tensorflow
+all_pics = all_pics /255.0
+#Transpose data so we get 32x32 sets of pixels in format [R,G,B]
+#Result should be 1000 images in this given format:
+#all_pics[IMG Number][Y Location][X Location][RGB value]
+all_pics = np.transpose(all_pics, (0,2,3,1))
+
+#Grab only cat pictures:
+#Explanation:
+#For every i in range(length of dataset)
+#If corresponding label == 3 (ID For cats)
+#Add data into datset
+all_pics = [all_pics[i] for i in range(len(all_pics)) if all_labels[i] == 3]
+
+#TODO: Wrap all the above code into a function/external package
+
+#---------------------------------------------------------
+
+
+
+
 
 
 def make_encoder(data, code_size):
@@ -24,10 +79,6 @@ def make_prior(code_size):
   loc = tf.zeros(code_size)
   scale = tf.ones(code_size)
   return tfd.MultivariateNormalDiag(loc, scale)
-
-######################################################################
-
-############################ Botoul ##################################
 
 #Declaring a function called decoder which takes two parameters: code and data_shape
 def make_decoder(code, data_shape):
@@ -52,7 +103,6 @@ def make_decoder(code, data_shape):
   # even though they have independent parameters
   return tfd.Independent(tfd.Bernoulli(logit), 2)
 
-#######################################################################
 
 def plot_codes(ax, codes, labels):
   ax.scatter(codes[:, 0], codes[:, 1], s=2, c=labels, alpha=0.1)
@@ -66,23 +116,23 @@ def plot_codes(ax, codes, labels):
 
 def plot_samples(ax, samples):
   for index, sample in enumerate(samples):
-    ax[index].imshow(sample, cmap='gray')
+    ax[index].imshow(sample, cmap=plt.cm.binary)
     ax[index].axis('off')
 
 
-############################ Logan ##################################
 
 #Create placeholder data in dimension ?x28x28, has no represented data values
 #'None' represents an unknown dimension
-data = tf.placeholder(tf.float32, [None, 28, 28])
+data = tf.placeholder(tf.float32, [None, 32, 32, 3])
+
 
 #Create function templates, this ensures that function specific variables are initialized first and consistent between all calls of this function
 make_encoder = tf.make_template('encoder', make_encoder)
 make_decoder = tf.make_template('decoder', make_decoder)
 
 
-# Define the model------------------------------------------------------
 
+#------------------------------Model Definitions---------------------------------
 #Returns a Multivariate Normal Diag Distribution with basic parameters set [0,0] and [1,1], prior is fixed with no trainable parameters so it does not need a template.
 #See code explanation for 'make_prior'
 #Prior is p(z)
@@ -95,10 +145,10 @@ posterior = make_encoder(data, code_size=2)
 code = posterior.sample()
 
 
-# Define the loss-------------------------------------------------------
+#------------------------------Loss Function---------------------------------
 #We need to compute the negative log-likelihood, so we use our decoder to find log(p(x|z))
 #Data is used as a template
-likelihood = make_decoder(code, [28, 28]).log_prob(data)
+likelihood = make_decoder(code, [32, 32, 3]).log_prob(data)
 #Find the KL divergence of the posterior and prior KL[p(z|x)||p(z)]
 divergence = tfd.kl_divergence(posterior, prior)
 #elbo is our loss function since it should be [-log(p(x|z)) + KL(p(z|x)||p(z))]
@@ -109,9 +159,21 @@ elbo = tf.reduce_mean(likelihood - divergence)
 #Note, learning_rate is default '0.001' so this input is pointless
 optimize = tf.train.AdamOptimizer(0.001).minimize(-elbo)
 #Use the same decoder as before (Since we're using templates) to grab samples of the data. This is purely used for visual output in the code below.
-samples = make_decoder(prior.sample(10), [28, 28]).mean()
+samples = make_decoder(prior.sample(10), [32, 32, 3]).mean()
 
-######################################################################
+
+
+
+#Used for grabbing images. Dirty function, should be changed
+def get_next(input, pos):
+  pos = pos*100
+  while pos+100 > len(input):
+    pos -= len(input)
+  return [input[i] for i in range(pos,pos+100)]
+
+
+
+
 
 ############################ Sean ####################################
 #Simplifies the input data into mnist
@@ -125,7 +187,7 @@ with tf.train.MonitoredSession() as sess:
   #Set max num of epoch
   for epoch in range(20):
     #Reshaping images to parameters (**NumberOfImages, ImageWidth, ImageHeight**, ColorDimension)
-    feed = {data: mnist.test.images.reshape([-1, 28, 28])}
+    feed = {data: all_pics}
     #Runs with Error Cost, Code, and Images
     test_elbo, test_codes, test_samples = sess.run([elbo, code, samples], feed)
     #Prints out epochs and error cost
@@ -138,7 +200,7 @@ with tf.train.MonitoredSession() as sess:
     plot_samples(ax[epoch, 1:], test_samples)
 #---------------------------------Optimizer--------------------------------------
     for _ in range(600):
-      feed = {data: mnist.train.next_batch(100)[0].reshape([-1, 28, 28])}
+      feed = {data: get_next(all_pics, i)}
       #Optimize based on Error Cost
       sess.run(optimize, feed)
 #----------------------------------Output-----------------------------------------
