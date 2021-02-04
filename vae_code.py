@@ -24,7 +24,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow as tf
 
-tfd = tf.contrib.distributions
+import tensorflow_probability as tfp
+tfd = tfp.distributions
 
 
 
@@ -48,14 +49,18 @@ all_pics = datab.load_data_sets(CIFAR10_Filenames)
 
 
 
+#Diable eager execution for the sake of v1 compatability
+tf.compat.v1.disable_eager_execution()
+
+
 
 
 def make_encoder(data, code_size):
-  x = tf.layers.flatten(data)
-  x = tf.layers.dense(x, 200, tf.nn.relu)
-  x = tf.layers.dense(x, 200, tf.nn.relu)
-  loc = tf.layers.dense(x, code_size)
-  scale = tf.layers.dense(x, code_size, tf.nn.softplus)
+  x = tf.compat.v1.layers.flatten(data)
+  x = tf.compat.v1.layers.dense(x, 200, tf.nn.relu)
+  x = tf.compat.v1.layers.dense(x, 200, tf.nn.relu)
+  loc = tf.compat.v1.layers.dense(x, code_size)
+  scale = tf.compat.v1.layers.dense(x, code_size, tf.nn.softplus)
   return tfd.MultivariateNormalDiag(loc, scale)
 
 
@@ -75,10 +80,10 @@ def make_decoder(code, data_shape):
   # as they provide non-linearity, without which the neural network
   # reduces to a mere logistic regression model
   # applying `tf.nn.relu` function and add a Dense layer as the first layer.
-  x = tf.layers.dense(x, 200, tf.nn.relu)
-  x = tf.layers.dense(x, 200, tf.nn.relu)
+  x = tf.compat.v1.layers.dense(x, 200, tf.nn.relu)
+  x = tf.compat.v1.layers.dense(x, 200, tf.nn.relu)
   #Logits are by definition unnormalized log probabilities
-  logit = tf.layers.dense(x, np.prod(data_shape))
+  logit = tf.compat.v1.layers.dense(x, np.prod(data_shape))
   #-1 Place holder for the dimension that will be calculated automatically.
   # this way, we can calculate length accurately
   logit = tf.reshape(logit, [-1] + data_shape)
@@ -107,12 +112,12 @@ def plot_samples(ax, samples):
 
 #Create placeholder data in dimension ?x28x28, has no represented data values
 #'None' represents an unknown dimension
-data = tf.placeholder(tf.float32, [None, 32, 32, 3])
+data = tf.compat.v1.placeholder(tf.float32, [None, 32, 32, 3])
 
 
 #Create function templates, this ensures that function specific variables are initialized first and consistent between all calls of this function
-make_encoder = tf.make_template('encoder', make_encoder)
-make_decoder = tf.make_template('decoder', make_decoder)
+make_encoder = tf.compat.v1.make_template('encoder', make_encoder)
+make_decoder = tf.compat.v1.make_template('decoder', make_decoder)
 
 
 
@@ -137,11 +142,11 @@ likelihood = make_decoder(code, [32, 32, 3]).log_prob(data)
 divergence = tfd.kl_divergence(posterior, prior)
 #elbo is our loss function since it should be [-log(p(x|z)) + KL(p(z|x)||p(z))]
 #Here we find the value but negative
-elbo = tf.reduce_mean(likelihood - divergence)
+elbo = tf.reduce_mean(input_tensor=likelihood - divergence)
 #Setup the tensorflow optimizer that will minimize loss, we must do it according to our created loss function
 #We must make elbo negative in order to correct signs since our output above is negative
 #Note, learning_rate is default '0.001' so this input is pointless
-optimize = tf.train.AdamOptimizer(0.001).minimize(-elbo)
+optimize = tf.compat.v1.train.AdamOptimizer(0.001).minimize(-elbo)
 #Use the same decoder as before (Since we're using templates) to grab samples of the data. This is purely used for visual output in the code below.
 samples = make_decoder(prior.sample(10), [32, 32, 3]).mean()
 
@@ -173,9 +178,10 @@ log_file = open("run_log.log", 'w')
 
 plot_iter = 0
 
-with tf.train.MonitoredSession() as sess:
+with tf.compat.v1.train.MonitoredSession() as sess:
 #------------------------------Running Session---------------------------------
   #Set max num of epoch
+  print("Running...")
   for epoch in range(max_epochs):
     #Reshaping images to parameters (**NumberOfImages, ImageWidth, ImageHeight**, ColorDimension)
     feed = {data: all_pics}
