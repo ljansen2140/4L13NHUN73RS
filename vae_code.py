@@ -1,63 +1,49 @@
-# Full example for my blog post at:
+###################################################################
+#                                                                 #
+# ./vae_code.py                                                   #
+#                                                                 #
+# Main runtime code for variation auto-encoder training.          #
+#                                                                 #
+###################################################################
+
+
+#---------------------------------------------------------
+#CIFAR10 Branch
+#---------------------------------------------------------
+#This code is indev code for making this VAE work with the CIFAR10 dataset, it may not run properly
+#TODO: Remove this on merge
+
+
+
+
+#Based on original code by:
 # https://danijar.com/building-variational-auto-encoders-in-tensorflow/
 
 
 import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow as tf
-from tensorflow.examples.tutorials.mnist import input_data
 
 tfd = tf.contrib.distributions
 
 
 
-#---------------------------------------------------------
-#---------------------TEST CODE---------------------------
-#---------------------------------------------------------
-#CIFAR10 Branch
-#This code is indev code for making this VAE work with the CIFAR10 dataset, it may not run properly
-#
-#Errors: Issues with plotting, see lines 191, 193, 201
+#Data Builder File: ./data_builder.py
+import data_builder as datab
 
 
-#Function for returning dictionary data from Pickle
-#Format info here: http://www.cs.toronto.edu/~kriz/cifar.html
-import pickle
-def unpickle(file):
-    with open(file, 'rb') as fo:
-        d = pickle.load(fo, encoding='bytes')
-    return d
 
-#Get from data batch 1
-data_set_1 = unpickle('data_batch_1')
-#Grab only the image data
-all_data = data_set_1[b'data']
-#Get labels
-all_labels = data_set_1[b'labels']
-#Reshape data into usable format
-#Format, each pic = 3072 entries
-#1024 - R values
-#1024 - G values
-#1024 - B values
-# Total 3x32x32 = 3072
-all_pics = all_data.reshape(-1,3,32,32)
-#Normalize values (betwee 0 and 1) for tensorflow
-all_pics = all_pics /255.0
-#Transpose data so we get 32x32 sets of pixels in format [R,G,B]
-#Result should be 1000 images in this given format:
-#all_pics[IMG Number][Y Location][X Location][RGB value]
-all_pics = np.transpose(all_pics, (0,2,3,1))
+#CIFAR10 Filename List for importer
+CIFAR10_Filenames = ['data_batch_1','data_batch_2','data_batch_3','data_batch_4','data_batch_5']
 
-#Grab only cat pictures:
-#Explanation:
-#For every i in range(length of dataset)
-#If corresponding label == 3 (ID For cats)
-#Add data into datset
-all_pics = [all_pics[i] for i in range(len(all_pics)) if all_labels[i] == 3]
+#Import data from CIFAR10 Dataset. Expected 5000 images total.
+# NOTE: This should work properly...
+# TODO: Double check the data returned is what is expected
+# RFE: Change the 'all_pics' variable name throughout code to clear up ambiguous variables
 
-#TODO: Wrap all the above code into a function/external package
-
-#---------------------------------------------------------
+# load_data_sets(file_list, data_id)
+# Default data ID is 3 for Cats - See data_builder.py for details
+all_pics = datab.load_data_sets(CIFAR10_Filenames)
 
 
 
@@ -163,6 +149,7 @@ samples = make_decoder(prior.sample(10), [32, 32, 3]).mean()
 
 
 #Used for grabbing images. Dirty function, should be changed
+# TODO: Make this method not terrible
 def get_next(input, pos):
   pos = pos*100
   while pos+100 > len(input):
@@ -170,12 +157,12 @@ def get_next(input, pos):
   return [input[i] for i in range(pos,pos+100)]
 
 
-mnist = input_data.read_data_sets('MNIST_data/')
-
 
 #Temporary labels, later on should be based on actual image labels and dataset size
 labels = [3]*1016
 
+
+# RFE: Clean up this code so it is more concise
 #-------------------------Creating Tensorflow Session--------------------------
 #Create an array with single a-axis
 fig, ax = plt.subplots(nrows=20, ncols=11, figsize=(10, 20))

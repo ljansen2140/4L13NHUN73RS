@@ -1,0 +1,4 @@
+.ignore
+MNIST_data
+vae_code.py
+__pycache__
